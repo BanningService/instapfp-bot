@@ -5,8 +5,8 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 # 🔑 Secrets
-BOT_TOKEN = os.environ ["7980643751:AAF5ROTeFclCLvE_U8ScBPfsg4EoYDpAGm0"]
-RAPIDAPI_KEY = os.environ ["d5a06a28f9msha01cc5c23dfc50bp164a9ajsn6c4412ff8c45"]
+BOT_TOKEN = os.environ ["BOT_TOKEN"]
+RAPIDAPI_KEY = os.environ ["RAPIDAPI_KEY"]
 
 # Logging
 logging.basicConfig(
