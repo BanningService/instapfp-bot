@@ -43,18 +43,16 @@ def _extract_pic_urls(data: dict):
     Try multiple known shapes:
     - {"result": {"user": {...}}}
     - {"result": [{"user": {...}}]}
-    - {"result": {...}}  # sometimes 'user' is flattened
-    - top-level fields (rare)
+    - {"result": {...}}
+    - top-level fields
     Returns (hd_url or None, normal_url or None)
     """
     def _from_user(user: dict):
         hd = None
         normal = None
         if isinstance(user, dict):
-            # Common fields
             if isinstance(user.get("hd_profile_pic_url_info"), dict):
                 hd = user["hd_profile_pic_url_info"].get("url")
-            # Some APIs expose directly "hd_profile_pic_url"
             hd = hd or user.get("hd_profile_pic_url")
             normal = user.get("profile_pic_url") or user.get("profile_pic_url_hd")
         return hd, normal
@@ -62,17 +60,14 @@ def _extract_pic_urls(data: dict):
     if not isinstance(data, dict):
         return None, None
 
-    # Shape 1: {"result": {"user": {...}}}
     result = data.get("result")
     if isinstance(result, dict):
         if "user" in result and isinstance(result["user"], dict):
             return _from_user(result["user"])
-        # Sometimes fields live directly under result
         hd, normal = _from_user(result)
         if hd or normal:
             return hd, normal
 
-    # Shape 2: {"result": [{"user": {...}}]}
     if isinstance(result, list) and result:
         first = result[0]
         if isinstance(first, dict):
@@ -82,11 +77,9 @@ def _extract_pic_urls(data: dict):
             if hd or normal:
                 return hd, normal
 
-    # Shape 3: top-level user
     if "user" in data and isinstance(data["user"], dict):
         return _from_user(data["user"])
 
-    # Shape 4: top-level fields
     hd, normal = _from_user(data)
     return hd, normal
 
@@ -126,7 +119,7 @@ async def pfp(update: Update, context: ContextTypes.DEFAULT_TYPE):
         resp = requests.post(
             API_URL,
             json={"username": username},
-            headers(API_HEADERS),  # <-- keep headers fresh
+            headers=API_HEADERS,
             timeout=20
         )
     except requests.RequestException as net_err:
@@ -134,17 +127,14 @@ async def pfp(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"🌐 Network error: {net_err}")
         return
 
-    # Try to parse JSON always, but keep raw fallback
     raw_text = resp.text
     try:
         data = resp.json()
     except Exception:
         data = None
 
-    # Log for debugging on your server
     logger.info("API status=%s body=%s", resp.status_code, raw_text)
 
-    # Handle non-200 with message surface
     if resp.status_code != 200:
         msg = None
         if isinstance(data, dict):
@@ -159,7 +149,6 @@ async def pfp(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ Invalid JSON response from API.")
         return
 
-    # Some APIs wrap an error inside 200 OK
     if any(k in data for k in ("error", "errors")) and not data.get("result"):
         await update.message.reply_text(f"❌ API error: {data.get('error') or data.get('errors')}")
         return
@@ -173,7 +162,6 @@ async def pfp(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_photo(normal_url, caption=f"📸 Profile picture of @{username}")
         return
 
-    # If the shape didn't match, show a helpful hint with a tiny snippet for you
     snippet = raw_text[:300].replace("\n", " ")
     await update.message.reply_text(
         "❌ User not found or unexpected response shape.\n"
