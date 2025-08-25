@@ -5,8 +5,8 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 # 🔑 Secrets
-BOT_TOKEN = os.environ ["BOT_TOKEN"]
-RAPIDAPI_KEY = os.environ ["RAPIDAPI_KEY"]
+BOT_TOKEN = os.environ["BOT_TOKEN"]
+RAPIDAPI_KEY = os.environ["RAPIDAPI_KEY"]
 
 # Logging
 logging.basicConfig(
@@ -35,13 +35,12 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # /pfp
 async def pfp(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
-        await update.message.reply_text("⚠️ Please provide a username.\nExample: `/pfp cristiano`")
+        await update.message.reply_text("⚠️ Please provide a username.\nExample: `/pfp cristiano`", parse_mode="Markdown")
         return
 
     username = context.args[0]
 
     url = "https://save-insta1.p.rapidapi.com/profile"
-    payload = f'{{"username":"{username}"}}'
     headers = {
         "x-rapidapi-key": RAPIDAPI_KEY,
         "x-rapidapi-host": "save-insta1.p.rapidapi.com",
@@ -49,19 +48,19 @@ async def pfp(update: Update, context: ContextTypes.DEFAULT_TYPE):
     }
 
     try:
-        response = requests.post(url, data=payload, headers=headers)
+        response = requests.post(url, json={"username": username}, headers=headers)
         data = response.json()
 
-        # Extract user data
-        if "result" in data and len(data["result"]) > 0 and "user" in data["result"][0]:
-            user = data["result"][0]["user"]
+        logging.info(data)  # For debugging in logs
 
-            # Prefer HD profile pic if available
-            hd_pic = user.get("hd_profile_pic_url_info")
+        if "result" in data and "user" in data["result"]:
+            user = data["result"]["user"]
+
+            hd_pic = user.get("hd_profile_pic_url_info", {}).get("url")
             normal_pic = user.get("profile_pic_url")
 
-            if hd_pic and isinstance(hd_pic, dict) and "url" in hd_pic:
-                await update.message.reply_photo(hd_pic["url"])
+            if hd_pic:
+                await update.message.reply_photo(hd_pic)
             elif normal_pic:
                 await update.message.reply_photo(normal_pic)
             else:
