@@ -1,9 +1,0 @@
-name: wake
-on:
-  schedule: [{cron: "*/50 * * * *"}]
-  workflow_dispatch:
-jobs:
-  w:
-    runs-on: ubuntu-latest
-    steps:
-      - run: curl -fsS "https://replit.com/@experthackersvi/instapfp-bot?run=1"
